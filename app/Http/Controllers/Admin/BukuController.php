@@ -43,23 +43,35 @@ class BukuController extends Controller
 
     public function store(Request $request)
     {
+        if ($request->hasFile('excel_file')) {
+            $request->validate([
+                'excel_file' => 'required|mimes:xlsx,xls',
+            ]);
+
+            try {
+                Excel::import(new BukuImport, $request->file('excel_file'));
+                return redirect()->route('admin.buku.index')->with('success', 'Data buku berhasil diimport!');
+            } catch (\Exception $e) {
+                return back()->with('error', 'Gagal import: ' . $e->getMessage());
+            }
+        }
+
         $request->validate([
-            'excel_file' => 'required|mimes:xlsx,xls',
+            'kode_buku' => 'required|string|unique:buku,kode_buku',
+            'judul'     => 'required|string|max:255',
+            'pengarang' => 'required|string|max:255',
+            'stok'      => 'required|integer|min:0',
         ]);
 
-        try {
-            $import = new BukuImport;
-            Excel::import($import, $request->file('excel_file'));
+        Buku::create([
+            'kode_buku' => $request->kode_buku,
+            'judul'     => $request->judul,
+            'pengarang' => $request->pengarang,
+            'stok'      => $request->stok,
+        ]);
 
-            $skipped = count($import->failures());
-            $message = $skipped > 0
-                ? "Import selesai! $skipped duplikat di-skip."
-                : "Semua data buku berhasil diimport!";
-
-            return redirect()->route('buku.index')->with('success', $message);
-        } catch (\Exception $e) {
-            return back()->with('error', 'Gagal import: ' . $e->getMessage());
-        }
+        return redirect()->route('admin.buku.index')
+            ->with('success', 'Buku berhasil ditambahkan manual!');
     }
 
     public function edit($id)

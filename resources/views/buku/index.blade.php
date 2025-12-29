@@ -12,7 +12,7 @@
         </a>
         <a href="{{ route('buku.create') }}"
            class="bg-teal-600 text-white px-4 py-2 rounded-md hover:bg-teal-700 flex items-center text-sm">
-            <i class="fas fa-file-excel mr-2"></i> Import Excel
+            <i class="fas fa-file-excel mr-2"></i> Tambah Buku
         </a>
     </div>
 </div>
