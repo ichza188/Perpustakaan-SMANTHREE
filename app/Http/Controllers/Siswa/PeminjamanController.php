@@ -114,7 +114,7 @@ class PeminjamanController extends Controller
             'admin_id' => auth()->id(),
             'catatan_admin' => 'Disetujui oleh admin'
         ]);
-
+        $p->buku->decrement('stok');
         return back()->with('success', 'Peminjaman disetujui!');
     }
 
@@ -128,7 +128,8 @@ class PeminjamanController extends Controller
             'admin_id' => auth()->id(),
             'catatan_admin' => 'Buku telah diterima kembali'
         ]);
-
+        
+        $p->buku->increment('stok');
         return back()->with('success', 'Buku telah dikembalikan. Stok bertambah!');
     }
 
