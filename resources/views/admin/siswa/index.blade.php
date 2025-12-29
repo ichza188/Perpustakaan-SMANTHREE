@@ -12,7 +12,7 @@
         </a>
         <a href="{{ route('admin.siswa.create') }}"
            class="bg-teal-600 text-white px-4 py-2 rounded-md hover:bg-teal-700 flex items-center text-sm">
-            Import Excel
+            Tambah Siswa
         </a>
     </div>
 </div>
