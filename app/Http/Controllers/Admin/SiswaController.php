@@ -21,6 +21,12 @@ class SiswaController extends Controller
 
             return DataTables::of($data)
                 ->addIndexColumn()
+                ->addColumn('nama', function ($row) {
+                    if ($row->status_bebas_perpus == 'disetujui') {
+                        return $row->nama . ' <span class="ml-2 px-2 py-1 text-xs font-bold text-green-700 bg-green-100 rounded-full border border-green-300"> <i class="fas fa-check-circle"></i> Bebas Perpus</span>';
+                    }
+                    return $row->nama;
+                })
                 ->addColumn('action', function ($row) {
                     return '
                         <button type="button" class="edit text-yellow-600 hover:text-yellow-800 text-lg" data-id="'.$row->id.'" title="Edit">
@@ -31,7 +37,7 @@ class SiswaController extends Controller
                         </button>
                     ';
                 })
-                ->rawColumns(['action'])
+                ->rawColumns(['action', 'nama'])
                 ->make(true);
         }
 
@@ -69,26 +75,33 @@ class SiswaController extends Controller
             'tanggal_lahir' => 'required|date',
         ]);
 
-        // 1. Buat Akun Login (User) terlebih dahulu
-        // Username otomatis pakai NISN, Password default: 'password'
-        $user = User::create([
-            'username' => $request->nisn,
-            'role'     => 'siswa',
-            'password' => \Illuminate\Support\Facades\Hash::make('password'), 
-        ]);
-
-        // 2. Buat Data Profil (Siswa) yang terhubung ke User tadi
-        Siswa::create([
-            'user_id'       => $user->id,
-            'nama'          => $request->nama,
-            'nisn'          => $request->nisn,
-            'kelas'         => $request->kelas,
-            'angkatan'      => $request->angkatan,
-            'tanggal_lahir' => $request->tanggal_lahir,
-        ]);
-
+        \Illuminate\Support\Facades\DB::transaction(function () use ($request) {
+        
+            // --- LOGIKA PASSWORD ---
+            // Ambil input tanggal (2007-05-15) -> Ubah jadi (20070515)
+            $passwordGenerated = str_replace('-', '', $request->tanggal_lahir);
+    
+            // 2. Buat Akun Login (User)
+            $user = User::create([
+                'username' => $request->nisn,
+                'role'     => 'siswa',
+                'password' => \Illuminate\Support\Facades\Hash::make($passwordGenerated), // Gunakan password generate
+            ]);
+    
+            // 3. Buat Data Profil (Siswa)
+            Siswa::create([
+                'user_id'       => $user->id,
+                'nama'          => $request->nama,
+                'nisn'          => $request->nisn,
+                'kelas'         => $request->kelas,
+                'angkatan'      => $request->angkatan,
+                'tanggal_lahir' => $request->tanggal_lahir, // Simpan format asli di data diri
+            ]);
+    
+        });
+    
         return redirect()->route('admin.siswa.index')
-            ->with('success', 'Siswa berhasil ditambahkan manual! Password default: "password"');
+            ->with('success', 'Siswa berhasil ditambahkan! Password default: Tanggal Lahir (YYYYMMDD)');
     }
 
     public function edit($id)

@@ -25,10 +25,10 @@ class SiswaImport extends DefaultValueBinder implements ToModel, WithHeadingRow,
         if (!isset($row['nisn']) || empty($row['nisn'])) {
             return null;
         }
-
+    
         // === PERBAIKAN TANGGAL ===
         $tanggal_lahir_raw = $row['tanggal_lahir'];
-
+    
         // Cek apakah Excel serial number (numeric)
         if (is_numeric($tanggal_lahir_raw)) {
             $tanggal_lahir = Date::excelToDateTimeObject($tanggal_lahir_raw)->format('Y-m-d');
@@ -42,27 +42,29 @@ class SiswaImport extends DefaultValueBinder implements ToModel, WithHeadingRow,
                 return null; // Skip baris ini
             }
         }
-
-        $ddmmyyyy = Carbon::parse($tanggal_lahir)->format('dmy');
-
-        // Cek user sudah ada
+    
+        // === LOGIKA PASSWORD ===
+        // Mengubah tanggal lahir menjadi format YYYYMMDD (contoh: 20070515)
+        $passwordDefault = Carbon::parse($tanggal_lahir)->format('Ymd');
+    
+        // Cek user sudah ada atau buat baru
         $user = User::firstOrCreate(
             ['username' => $row['nisn']],
             [
-                'password' => Hash::make($ddmmyyyy),
+                'password' => Hash::make($passwordDefault), // Password otomatis dari tanggal lahir
                 'role' => 'siswa',
             ]
         );
-
-        // Cek siswa sudah ada
+    
+        // Cek siswa sudah ada agar tidak duplikat
         if (Siswa::where('user_id', $user->id)->exists()) {
             return null;
         }
-
+    
         return new Siswa([
             'user_id' => $user->id,
             'nama' => $row['nama'],
-            'tanggal_lahir' => $tanggal_lahir,
+            'tanggal_lahir' => $tanggal_lahir, // Simpan format asli Y-m-d ke database
             'angkatan' => $row['angkatan'],
             'nisn' => $row['nisn'],
             'kelas' => $row['kelas'],
